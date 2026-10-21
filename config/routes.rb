@@ -19,6 +19,13 @@ Rails.application.routes.draw do
 
 
   # ---------- Pair C: Attendee -> Ticket (and Festival -> Ticket) ----------
+  resources :attendees do
+    resources :tickets
+  end
+
+  resources :festivals, only: [] do
+    resources :tickets
+  end
 
 
 
