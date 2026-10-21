@@ -1,0 +1,75 @@
+# ===== app/models/application_record.rb =====
+class ApplicationRecord < ActiveRecord::Base
+  primary_abstract_class
+end
+
+# ===== app/models/artist.rb =====
+class Artist < ApplicationRecord
+  # A track has no meaning without its artist.
+  has_many :tracks, dependent: :destroy
+  has_many :performances, dependent: :destroy
+  has_many :stages, through: :performances
+
+  validates :name, presence: true
+end
+
+# ===== app/models/attendee.rb =====
+class Attendee < ApplicationRecord
+  # Removing an attendee's account removes their tickets.
+  has_many :tickets, dependent: :destroy
+  has_many :festivals, through: :tickets
+
+  validates :name, presence: true
+  validates :email, presence: true, uniqueness: true
+end
+
+# ===== app/models/festival.rb =====
+class Festival < ApplicationRecord
+  # Stages only exist as part of a festival, so they go with it.
+  has_many :stages, dependent: :destroy
+  # Sold tickets are a financial record: refuse to delete a festival that has them.
+  has_many :tickets, dependent: :restrict_with_error
+  has_many :attendees, through: :tickets
+
+  validates :name, presence: true
+  validates :starts_on, presence: true
+  validates :city, presence: true
+end
+
+# ===== app/models/performance.rb =====
+class Performance < ApplicationRecord
+  # Join model: one artist on one stage at one time.
+  belongs_to :stage
+  belongs_to :artist
+
+  validates :starts_at, presence: true
+end
+
+# ===== app/models/stage.rb =====
+class Stage < ApplicationRecord
+  belongs_to :festival
+  has_many :performances, dependent: :destroy
+  has_many :artists, through: :performances
+
+  validates :name, presence: true
+  validates :capacity, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
+end
+
+# ===== app/models/ticket.rb =====
+class Ticket < ApplicationRecord
+  # Two foreign keys: every ticket is bought by one attendee for one festival.
+  belongs_to :attendee
+  belongs_to :festival
+
+  validates :tier, presence: true
+  validates :price_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+end
+
+# ===== app/models/track.rb =====
+class Track < ApplicationRecord
+  belongs_to :artist
+
+  validates :title, presence: true
+  validates :length_sec, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
+end
+
